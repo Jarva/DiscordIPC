@@ -124,9 +124,10 @@ public class RichPresence
         }
         if (buttons.size() > 0) {
             JSONArray ja = new JSONArray();
-            buttons.forEach((key, value) -> {
+            buttons.forEach((label, url) -> {
                 JSONObject button = new JSONObject();
-                button.put(key, value);
+                button.put("label", label);
+                button.put("url", url);
                 ja.put(button);
             });
             jo.put("buttons", ja);
