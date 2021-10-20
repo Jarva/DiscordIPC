@@ -16,8 +16,13 @@
 package com.jagrosh.discordipc.entities;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.helpers.FormattingTuple;
 
 /**
  * An encapsulation of all data needed to properly construct a JSON RichPresence payload.
@@ -43,11 +48,12 @@ public class RichPresence
     private final String joinSecret;
     private final String spectateSecret;
     private final boolean instance;
+    private final HashMap<String, String> buttons;
     
     public RichPresence(String state, String details, OffsetDateTime startTimestamp, OffsetDateTime endTimestamp, 
             String largeImageKey, String largeImageText, String smallImageKey, String smallImageText, 
             String partyId, int partySize, int partyMax, String matchSecret, String joinSecret, 
-            String spectateSecret, boolean instance)
+            String spectateSecret, boolean instance, HashMap<String, String> buttons)
     {
         this.state = state;
         this.details = details;
@@ -64,7 +70,10 @@ public class RichPresence
         this.joinSecret = joinSecret;
         this.spectateSecret = spectateSecret;
         this.instance = instance;
+        this.buttons = buttons;
     }
+
+
 
     /**
      * Constructs a {@link JSONObject} representing a payload to send to discord
@@ -77,25 +86,48 @@ public class RichPresence
      */
     public JSONObject toJson()
     {
-        return new JSONObject()
-                .put("state", state)
-                .put("details", details)
-                .put("timestamps", new JSONObject()
-                        .put("start", startTimestamp==null ? null : startTimestamp.toEpochSecond())
-                        .put("end", endTimestamp==null ? null : endTimestamp.toEpochSecond()))
-                .put("assets", new JSONObject()
-                        .put("large_image", largeImageKey)
-                        .put("large_text", largeImageText)
-                        .put("small_image", smallImageKey)
-                        .put("small_text", smallImageText))
-                .put("party", partyId==null ? null : new JSONObject()
-                        .put("id", partyId)
-                        .put("size", new JSONArray().put(partySize).put(partyMax)))
-                .put("secrets", new JSONObject()
-                        .put("join", joinSecret)
-                        .put("spectate", spectateSecret)
-                        .put("match", matchSecret))
-                .put("instance", instance);
+        JSONObject jo = new JSONObject();
+        jo.put("state", state);
+        jo.put("details", details);
+        if (startTimestamp != null || endTimestamp != null) {
+            jo.put("timestamps", new JSONObject()
+                    .put("start", startTimestamp == null ? null : startTimestamp.toEpochSecond())
+                    .put("end", endTimestamp == null ? null : endTimestamp.toEpochSecond())
+            );
+        }
+        if (startTimestamp != null || endTimestamp != null) {
+            jo.put("timestamps", new JSONObject()
+                    .put("start", startTimestamp == null ? null : startTimestamp.toEpochSecond())
+                    .put("end", endTimestamp == null ? null : endTimestamp.toEpochSecond())
+            );
+        }
+        if (largeImageKey != null || largeImageText != null || smallImageKey != null || smallImageText != null) {
+            jo.put("assets", new JSONObject()
+                    .put("large_image", largeImageKey)
+                    .put("large_text", largeImageText)
+                    .put("small_image", smallImageKey)
+                    .put("small_text", smallImageText)
+            );
+        }
+        if (partyId != null) {
+            jo.put("party", new JSONObject()
+                    .put("id", partyId)
+                    .put("size", new JSONArray().put(partySize).put(partyMax))
+            );
+        }
+        if (joinSecret != null || spectateSecret != null || matchSecret != null) {
+            jo.put("secrets", new JSONObject()
+                    .put("join", joinSecret)
+                    .put("spectate", spectateSecret)
+                    .put("match", matchSecret)
+            );
+        }
+        if (buttons.size() > 0) {
+            jo.put("buttons", new JSONArray(buttons));
+        }
+        jo.put("instance", instance);
+
+        return jo;
     }
 
     /**
@@ -121,6 +153,7 @@ public class RichPresence
         private String joinSecret;
         private String spectateSecret;
         private boolean instance;
+        private final HashMap<String, String> buttons = new HashMap<>();
 
         /**
          * Builds the {@link RichPresence} from the current state of this builder.
@@ -132,7 +165,20 @@ public class RichPresence
             return new RichPresence(state, details, startTimestamp, endTimestamp, 
                     largeImageKey, largeImageText, smallImageKey, smallImageText, 
                     partyId, partySize, partyMax, matchSecret, joinSecret, 
-                    spectateSecret, instance);
+                    spectateSecret, instance, buttons);
+        }
+
+        /**
+         * Adds a clickable button to the presence.
+         *
+         * @param label The label of the button.
+         * @param url The url for the button to link to.
+         *
+         * @return This Builder.
+         */
+        public Builder addButton(String label, String url) {
+            this.buttons.put(label, url);
+            return this;
         }
 
         /**
